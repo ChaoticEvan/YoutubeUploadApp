@@ -23,6 +23,7 @@ namespace YoutubeUploadApp
 {
     class Controller
     {
+        // Instance variables for storing video information
         private string filePath;
         private string videoTitle;
         private string videoDescription;
@@ -52,12 +53,13 @@ namespace YoutubeUploadApp
         {
             this.filePath = filePath;
             this.videoTitle = videoTitle;
-            videoDescription = videoDesc;
+            this.videoDescription = videoDesc;
 
             using (HttpClient client = CreateClient())
             {
                 tokenSource = new CancellationTokenSource();
 
+                // Create body for HTTP request
                 dynamic requestContent = new ExpandoObject();
                 dynamic fileDetails = new ExpandoObject();
                 fileDetails.fileName = filePath;
@@ -92,7 +94,6 @@ namespace YoutubeUploadApp
             client.BaseAddress = new Uri("https://www.googleapis.com/upload/youtube/v3/");
 
             // Tell the server that the client will accept this particular type of response data
-            client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Add("Authorization", "Bearer AIzaSyCrkhpYRJ5ZeJJ8iceAtXrPKVCMfNejCu4");
             client.DefaultRequestHeaders.Add("Accept", "application/json");
 
