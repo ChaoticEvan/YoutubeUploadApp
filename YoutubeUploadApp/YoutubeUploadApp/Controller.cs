@@ -27,6 +27,8 @@ namespace YoutubeUploadApp
         private string filePath;
         private string videoTitle;
         private string videoDescription;
+        private static StringBuilder log;
+        private static string logFilePath;
 
         // Here is our view
         private YoutubeUploadAppGUI window;
@@ -37,71 +39,126 @@ namespace YoutubeUploadApp
         private CancellationTokenSource tokenSource;
 
         /// <summary>
-        /// Creates a controller and hooks alle vents
+        /// Creates a controller and hooks all events
         /// </summary>
         /// <param name="window"></param>
         public Controller(YoutubeUploadAppGUI window)
         {
             this.window = window;
-            window.Upload = HandleUploadAsync;
+            window.Upload = HandleUpload;
+            log = new StringBuilder();
+            logFilePath = @"C:\Users\evanv\source\repos\YoutubeUploadApp\logs\" + DateTime.Now.ToString("mm-dd-yyyy hh:mm") + "_YoutubeUploadApp.txt";
         }
 
         /// <summary>
         /// Handles when the upload button is pressed
         /// </summary>
-        private async void HandleUploadAsync(string filePath, string videoTitle, string videoDesc)
+        private void HandleUpload(string filePath, string videoTitle, string videoDesc)
         {
             this.filePath = filePath;
             this.videoTitle = videoTitle;
             this.videoDescription = videoDesc;
 
-            using (HttpClient client = CreateClient())
+            Upload();
+        }
+
+        [STAThread]
+        void Upload()
+        {
+            try
             {
-                tokenSource = new CancellationTokenSource();
-
-                // Create body for HTTP request
-                dynamic requestContent = new ExpandoObject();
-                dynamic fileDetails = new ExpandoObject();
-                fileDetails.fileName = filePath;
-                dynamic snippet = new ExpandoObject();
-                snippet.title = videoTitle;
-                snippet.description = videoDesc;
-                snippet.categoryId = "22";
-                dynamic status = new ExpandoObject();
-                status.privacyStatus = "unlisted";
-
-                StringContent content = new StringContent(JsonConvert.SerializeObject(requestContent), Encoding.UTF8, "application/json");
-                HttpResponseMessage response = await client.PostAsync("videos", content, tokenSource.Token);
-
-                if(response.IsSuccessStatusCode)
+                Run().Wait();
+            }
+            catch (AggregateException ex)
+            {
+                foreach (var e in ex.InnerExceptions)
                 {
-                    // SHUT DOWN COMPUTER
-                }
-                else
-                {
-                    window.Message = "Error uploading: " + response.StatusCode + "\n" + response.ReasonPhrase;
+                    log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + " ERROR Error occured while uploading");
+                    log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + e.Message);
+                    log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + e.StackTrace);
+                    AppendLogs();
                 }
             }
         }
 
-        /// <summary>
-        /// Creates an HttpClient for communicating with the server.
-        /// </summary>
-        private static HttpClient CreateClient()
+        private async Task Run()
         {
-            // Create a client whose base address is the GitHub server
-            HttpClient client = new HttpClient
+            UserCredential credential;
+            using (var stream = new FileStream("client_secrets.json", FileMode.Open, FileAccess.Read))
             {
-                BaseAddress = new Uri("https://www.googleapis.com/upload/youtube/v3/")
-            };
+                credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                    GoogleClientSecrets.Load(stream).Secrets,
+                    // This OAuth 2.0 access scope allows an application to upload files to the
+                    // authenticated user's YouTube channel, but doesn't allow other types of access.
+                    new[] { YouTubeService.Scope.YoutubeUpload },
+                    "user",
+                    CancellationToken.None
+                );
+            }
 
-            // Tell the server that the client will accept this particular type of response data
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Add("Authorization", File.ReadAllText(@"C:\Users\evanv\Source\Repos\YoutubeUploadApp\GoogleApiToken.txt"););
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            var youtubeService = new YouTubeService(new BaseClientService.Initializer()
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
+            });
 
-            // There is more client configuration to do, depending on the request.
-            return client;
+            var video = new Video();
+            video.Snippet = new VideoSnippet();
+            video.Snippet.Title = this.videoTitle;
+            video.Snippet.Description = this.videoDescription;
+            video.Snippet.CategoryId = "22"; // See https://developers.google.com/youtube/v3/docs/videoCategories/list
+            video.Status = new VideoStatus();
+            video.Status.PrivacyStatus = "unlisted";
+            var filePath = this.filePath;
+
+            using (var fileStream = new FileStream(filePath, FileMode.Open))
+            {
+                var videosInsertRequest = youtubeService.Videos.Insert(video, "snippet,status", fileStream, "video/*");
+                videosInsertRequest.ProgressChanged += videosInsertRequest_ProgressChanged;
+                videosInsertRequest.ResponseReceived += videosInsertRequest_ResponseReceived;
+
+                log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + " INFO Starting to upload video");
+                AppendLogs();
+                await videosInsertRequest.UploadAsync();
+            }
         }
+
+        static void videosInsertRequest_ProgressChanged(Google.Apis.Upload.IUploadProgress progress)
+        {
+            switch (progress.Status)
+            {
+                case UploadStatus.Uploading:
+                    Console.WriteLine("{0} bytes sent.", progress.BytesSent);
+                    break;
+
+                case UploadStatus.Failed:
+                    Console.WriteLine("An error prevented the upload from completing.\n{0}", progress.Exception);
+                    break;
+            }
+        }
+
+        static void videosInsertRequest_ResponseReceived(Video video)
+        {
+            Console.WriteLine("Video id '{0}' was successfully uploaded.", video.Id);
+        }
+
+        /// <summary>
+        /// Method for appending logs to a file and clearing current logs
+        /// </summary>
+        private static void AppendLogs()
+        {
+            File.AppendAllText(logFilePath, log.ToString());
+            log.Clear();
+        }
+    }
+
+    /// <summary>
+    /// YouTube Data API v3 sample: upload a video.
+    /// Relies on the Google APIs Client Library for .NET, v1.7.0 or higher.
+    /// See https://developers.google.com/api-client-library/dotnet/get_started
+    /// </summary>
+    internal class UploadVideo
+    {
+        
     }
 }
