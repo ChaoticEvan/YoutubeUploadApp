@@ -88,12 +88,14 @@ namespace YoutubeUploadApp
         private static HttpClient CreateClient()
         {
             // Create a client whose base address is the GitHub server
-            HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri("https://www.googleapis.com/upload/youtube/v3/");
+            HttpClient client = new HttpClient
+            {
+                BaseAddress = new Uri("https://www.googleapis.com/upload/youtube/v3/")
+            };
 
             // Tell the server that the client will accept this particular type of response data
             client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Add("Authorization", "Bearer AIzaSyCrkhpYRJ5ZeJJ8iceAtXrPKVCMfNejCu4");
+            client.DefaultRequestHeaders.Add("Authorization", File.ReadAllText(@"C:\Users\evanv\Source\Repos\YoutubeUploadApp\GoogleApiToken.txt"););
             client.DefaultRequestHeaders.Add("Accept", "application/json");
 
             // There is more client configuration to do, depending on the request.

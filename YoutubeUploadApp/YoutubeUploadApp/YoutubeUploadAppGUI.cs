@@ -64,7 +64,7 @@ namespace YoutubeUploadApp
         /// <param name="e">NOT USED</param>
         private void UploadVideoButton_Click(object sender, EventArgs e)
         {
-            if(String.IsNullOrEmpty(FilePathTextBox.Text) || String.IsNullOrEmpty(VideoTitleTextBox.Text) || String.IsNullOrEmpty(VideoDescriptionTextBox.Text))
+            if (String.IsNullOrEmpty(FilePathTextBox.Text) || String.IsNullOrEmpty(VideoTitleTextBox.Text) || String.IsNullOrEmpty(VideoDescriptionTextBox.Text))
             {
                 this.Message = "Check that the parameters are filled out";
                 return;
