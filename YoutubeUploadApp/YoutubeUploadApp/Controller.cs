@@ -1,23 +1,16 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Dynamic;
 using System.IO;
-using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Google.Apis.Auth.OAuth2;
-using Google.Apis.Auth.OAuth2.Flows;
-using Google.Apis.Auth.OAuth2.Requests;
 using Google.Apis.Services;
 using Google.Apis.Upload;
-using Google.Apis.Util.Store;
 using Google.Apis.YouTube.v3;
 using Google.Apis.YouTube.v3.Data;
-using Newtonsoft.Json;
-using OAuth2;
+
 
 namespace YoutubeUploadApp
 {
@@ -31,12 +24,7 @@ namespace YoutubeUploadApp
         private static string logFilePath;
 
         // Here is our view
-        private YoutubeUploadAppGUI window;
-
-        /// <summary>
-        /// Cancellation token for cancel button
-        /// </summary>
-        private CancellationTokenSource tokenSource;
+        private readonly YoutubeUploadAppGUI window;
 
         /// <summary>
         /// Creates a controller and hooks all events
@@ -84,7 +72,7 @@ namespace YoutubeUploadApp
         private async Task Run()
         {
             UserCredential credential;
-            using (var stream = new FileStream("client_secrets.json", FileMode.Open, FileAccess.Read))
+            using (var stream = new FileStream(@"C:\Users\evanv\Source\Repos\YoutubeUploadApp\YoutubeUploadApp\YoutubeUploadApp\client_secrets.json", FileMode.Open, FileAccess.Read))
             {
                 credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
                     GoogleClientSecrets.Load(stream).Secrets,
