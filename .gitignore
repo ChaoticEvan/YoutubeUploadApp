@@ -261,3 +261,4 @@ __pycache__/
 *.pyc
 /GoogleApiToken.txt
 /YoutubeUploadApp/YoutubeUploadApp/client_secrets.json
+/logs

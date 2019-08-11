@@ -35,7 +35,7 @@ namespace YoutubeUploadApp
             this.window = window;
             window.Upload = HandleUpload;
             log = new StringBuilder();
-            logFilePath = @"C:\Users\evanv\source\repos\YoutubeUploadApp\logs\" + DateTime.Now.ToString("mm-dd-yyyy hh:mm") + "_YoutubeUploadApp.txt";
+            logFilePath = @"C:\Users\evanv\source\repos\YoutubeUploadApp\logs\" + DateTime.Now.ToString("mm-dd-yyyy hh-mm") + "_YoutubeUploadApp.txt";
         }
 
         /// <summary>
@@ -46,6 +46,9 @@ namespace YoutubeUploadApp
             this.filePath = filePath;
             this.videoTitle = videoTitle;
             this.videoDescription = videoDesc;
+
+            log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + "INFO - Beginning upload process");
+            AppendLogs();
 
             Upload();
         }
@@ -61,7 +64,7 @@ namespace YoutubeUploadApp
             {
                 foreach (var e in ex.InnerExceptions)
                 {
-                    log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + " ERROR Error occured while uploading");
+                    log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + " ERROR -  Error occured while uploading");
                     log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + e.Message);
                     log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + e.StackTrace);
                     AppendLogs();
@@ -90,6 +93,7 @@ namespace YoutubeUploadApp
                 ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
             });
 
+            log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + " INFO -  Building video");
             var video = new Video();
             video.Snippet = new VideoSnippet();
             video.Snippet.Title = this.videoTitle;
@@ -98,6 +102,7 @@ namespace YoutubeUploadApp
             video.Status = new VideoStatus();
             video.Status.PrivacyStatus = "unlisted";
             var filePath = this.filePath;
+            AppendLogs();
 
             using (var fileStream = new FileStream(filePath, FileMode.Open))
             {
@@ -105,29 +110,32 @@ namespace YoutubeUploadApp
                 videosInsertRequest.ProgressChanged += videosInsertRequest_ProgressChanged;
                 videosInsertRequest.ResponseReceived += videosInsertRequest_ResponseReceived;
 
-                log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + " INFO Starting to upload video");
+                log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + " INFO -  Starting to upload video");
                 AppendLogs();
                 await videosInsertRequest.UploadAsync();
             }
         }
 
-        static void videosInsertRequest_ProgressChanged(Google.Apis.Upload.IUploadProgress progress)
+        static void videosInsertRequest_ProgressChanged(IUploadProgress progress)
         {
             switch (progress.Status)
             {
                 case UploadStatus.Uploading:
-                    Console.WriteLine("{0} bytes sent.", progress.BytesSent);
+                    log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + "INFO - " + progress.BytesSent + " bytes sent.");
+                    AppendLogs();
                     break;
 
                 case UploadStatus.Failed:
-                    Console.WriteLine("An error prevented the upload from completing.\n{0}", progress.Exception);
+                    log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + "ERROR - An error prevented the upload from completing.\n" + progress.Exception);
+                    AppendLogs();
                     break;
             }
         }
 
         static void videosInsertRequest_ResponseReceived(Video video)
         {
-            Console.WriteLine("Video id '{0}' was successfully uploaded.", video.Id);
+            log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + "SUCCESS - Video id " + video.Id + " was successfully uploaded.");
+            AppendLogs();
         }
 
         /// <summary>
@@ -135,7 +143,7 @@ namespace YoutubeUploadApp
         /// </summary>
         private static void AppendLogs()
         {
-            File.AppendAllText(logFilePath, log.ToString());
+            File.AppendAllText(@logFilePath, log.ToString());
             log.Clear();
         }
     }
