@@ -17,10 +17,10 @@ namespace YoutubeUploadApp
 {
     class YoutubeUploadAppModel
     {
-        // Instance variables for storing video information
-        private string filePath;
-        private string videoTitle;
-        private string videoDesc;
+        // Properties for storing video information
+        public string filePath { private get; set; }
+        public string videoTitle { private get; set; }
+        public string videoDesc { private get; set; }
 
         /// <summary>
         /// StringBuilder to contain logs
@@ -33,7 +33,16 @@ namespace YoutubeUploadApp
         private static string logFilePath;
 
         /// <summary>
-        /// Creates a Model object with video details
+        /// Creates a YoutubeUploadAppModel object
+        /// </summary>
+        public YoutubeUploadAppModel()
+        {
+            log = new StringBuilder();
+            logFilePath = @"C:\Users\evanv\source\repos\YoutubeUploadApp\logs\" + DateTime.Now.ToString("mm-dd-yyyy hh-mm") + "_YoutubeUploadApp.txt";
+        }
+
+        /// <summary>
+        /// Creates a YoutubeUploadAppModel object with video details
         /// </summary>
         /// <param name="filePath">Path to the video file to be uploaded</param>
         /// <param name="videoTitle">Title of the video</param>
@@ -47,6 +56,10 @@ namespace YoutubeUploadApp
             this.videoDesc = videoDesc;
         }
 
+        /// <summary>
+        /// Helper method for starting the upload process
+        /// and logging errors during the process
+        /// </summary>
         [STAThread]
         public void Upload()
         {
@@ -56,6 +69,7 @@ namespace YoutubeUploadApp
             }
             catch (AggregateException ex)
             {
+                // Log all exceptions caught while trying to upload
                 foreach (var e in ex.InnerExceptions)
                 {
                     log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + " ERROR -  Error occured while uploading");
@@ -66,6 +80,10 @@ namespace YoutubeUploadApp
             }
         }
 
+        /// <summary>
+        /// Establishes the connection to YouTube and uploads the video        
+        /// </summary>
+        /// <returns>async task</returns>
         private async Task Run()
         {
             UserCredential credential;
@@ -81,23 +99,25 @@ namespace YoutubeUploadApp
                 );
             }
 
+            // Creates the client service
             var youtubeService = new YouTubeService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
                 ApplicationName = Assembly.GetExecutingAssembly().GetName().Name
             });
 
+            // Build the video
             log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + " INFO -  Building video");
             var video = new Video();
             video.Snippet = new VideoSnippet();
             video.Snippet.Title = this.videoTitle;
             video.Snippet.Description = this.videoDesc;
-            video.Snippet.CategoryId = "22"; // See https://developers.google.com/youtube/v3/docs/videoCategories/list
             video.Status = new VideoStatus();
             video.Status.PrivacyStatus = "unlisted";
             var filePath = this.filePath;
             AppendLogs();
 
+            // Establish connection
             using (var fileStream = new FileStream(filePath, FileMode.Open))
             {
                 var videosInsertRequest = youtubeService.Videos.Insert(video, "snippet,status", fileStream, "video/*");
@@ -110,6 +130,10 @@ namespace YoutubeUploadApp
             }
         }
 
+        /// <summary>
+        /// Method that logs progress update
+        /// </summary>
+        /// <param name="progress">Progress report</param>
         static void videosInsertRequest_ProgressChanged(IUploadProgress progress)
         {
             switch (progress.Status)
@@ -126,6 +150,10 @@ namespace YoutubeUploadApp
             }
         }
 
+        /// <summary>
+        /// Log that video was uploaded 
+        /// </summary>
+        /// <param name="video"></param>
         static void videosInsertRequest_ResponseReceived(Video video)
         {
             log.AppendLine(DateTime.UtcNow.ToString("mm/dd/yyyy hh:mm:ss") + "SUCCESS - Video id " + video.Id + " was successfully uploaded.");

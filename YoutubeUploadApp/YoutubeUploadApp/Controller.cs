@@ -5,6 +5,7 @@
         // Here is our view
         private readonly YoutubeUploadAppGUI window;
 
+        // Here is our model
         private YoutubeUploadAppModel model;
 
         /// <summary>
@@ -23,7 +24,11 @@
         /// </summary>
         private void HandleUpload(string filePath, string videoTitle, string videoDesc)
         {
-            model = new YoutubeUploadAppModel(filePath, videoTitle, videoDesc);
-        }       
+            this.model.filePath = filePath;
+            this.model.videoTitle = videoTitle;
+            this.model.videoDesc = videoDesc;
+
+            model.Upload();
+        }
     }
 }
