@@ -42,21 +42,6 @@ namespace YoutubeUploadApp
         }
 
         /// <summary>
-        /// Creates a YoutubeUploadAppModel object with video details
-        /// </summary>
-        /// <param name="filePath">Path to the video file to be uploaded</param>
-        /// <param name="videoTitle">Title of the video</param>
-        /// <param name="videoDesc">Video description</param>
-        public YoutubeUploadAppModel(string filePath, string videoTitle, string videoDesc)
-        {
-            log = new StringBuilder();
-            logFilePath = @"C:\Users\evanv\source\repos\YoutubeUploadApp\logs\" + DateTime.Now.ToString("mm-dd-yyyy hh-mm") + "_YoutubeUploadApp.txt";
-            this.filePath = filePath;
-            this.videoTitle = videoTitle;
-            this.videoDesc = videoDesc;
-        }
-
-        /// <summary>
         /// Helper method for starting the upload process
         /// and logging errors during the process
         /// </summary>
